@@ -533,19 +533,45 @@ footer{border-top:1px solid var(--warm-gray);padding:48px 56px;display:flex;just
         <li><span class="ci">Amazon</span><span class="cv">Search "TinTrail Snacks" on Amazon India</span></li>
         <li><span class="ci">Flipkart</span><span class="cv">Search "TinTrail" on Flipkart</span></li>
         <li><span class="ci">WhatsApp</span><span class="cv">+91 98765 43210</span></li>
-        <li><span class="ci">Email</span><span class="cv">hello@tintrailsnacks.com</span></li>
+        <li><span class="ci">Email</span><span class="cv"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="a1c9c4cdcdcee1d5c8cfd5d3c0c8cdd2cfc0c2cad28fc2cecc">[email&#160;protected]</a></span></li>
         <li><span class="ci">Ships from</span><span class="cv">Bengaluru, Karnataka — Pan-India delivery</span></li>
       </ul>
     </div>
     <div class="reveal d2">
-      <div class="form-group"><label>Name</label><input type="text" placeholder="Your name"/></div>
-      <div class="form-group"><label>Email or WhatsApp</label><input type="text" placeholder="email@example.com"/></div>
-      <div class="form-group">
-        <label>Enquiry type</label>
-        <select><option>Individual order</option><option>Corporate gifting (25+ sets)</option><option>Retail / wholesale</option><option>Other</option></select>
-      </div>
-      <div class="form-group"><label>Message</label><textarea placeholder="Tell us what you need — quantities, occasion, date..."></textarea></div>
-      <button class="form-submit" id="submitBtn">Send Enquiry</button>
+      <form id="tintrail-form" onsubmit="handleSubmit(event)" novalidate>
+        <!-- Web3Forms: get your free key at web3forms.com → enter your Gmail -->
+        <input type="hidden" name="access_key" value="0701242b-b8b2-4efa-b123-b8a8a2071c47"/>
+        <input type="hidden" name="subject" value="New TinTrail Enquiry"/>
+        <input type="hidden" name="from_name" value="TinTrail Website"/>
+        <input type="hidden" name="redirect" value="false"/>
+        <input type="checkbox" name="botcheck" style="display:none"/>
+
+        <div class="form-group">
+          <label>Name</label>
+          <input type="text" name="name" placeholder="Your name" required/>
+        </div>
+        <div class="form-group">
+          <label>Email or WhatsApp</label>
+          <input type="text" name="contact" placeholder="email@example.com or +91 98765..." required/>
+        </div>
+        <div class="form-group">
+          <label>Enquiry type</label>
+          <select name="enquiry_type" required>
+            <option value="" disabled selected>Select...</option>
+            <option>Individual order</option>
+            <option>Corporate gifting (25+ sets)</option>
+            <option>Retail / wholesale</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Message</label>
+          <textarea name="message" placeholder="Tell us what you need — quantities, occasion, date..."></textarea>
+        </div>
+
+        <div id="form-status" style="display:none;font-size:13px;padding:10px 14px;border-radius:2px;margin-bottom:14px;"></div>
+        <button type="submit" class="form-submit" id="submitBtn">Send Enquiry</button>
+      </form>
     </div>
   </div>
 </section>
@@ -563,12 +589,85 @@ footer{border-top:1px solid var(--warm-gray);padding:48px 56px;display:flex;just
   <p class="footer-copy">© 2025 TinTrail Snacks · FSSAI Licensed · Bengaluru, India</p>
 </footer>
 
+<!-- Web3Forms script — handles spam protection automatically -->
+<script src="https://web3forms.com/client/script.js" async defer></script>
+
 <script>
-const nav=document.getElementById('navbar');
-window.addEventListener('scroll',()=>nav.classList.toggle('scrolled',window.scrollY>40));
-const io=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');io.unobserve(e.target)}})},{threshold:.1});
-document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
-document.getElementById('submitBtn').addEventListener('click',function(){this.textContent='Message Sent ✓';this.style.background='#4A7C59';this.disabled=true;});
+/* ── Navbar scroll ── */
+const nav = document.getElementById('navbar');
+window.addEventListener('scroll', () => nav.classList.toggle('scrolled', window.scrollY > 40));
+
+/* ── Scroll reveal ── */
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); }
+  });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+/* ── Web3Forms submit handler ── */
+async function handleSubmit(e) {
+  e.preventDefault();
+
+  const form   = document.getElementById('tintrail-form');
+  const btn    = document.getElementById('submitBtn');
+  const status = document.getElementById('form-status');
+
+  /* Basic validation */
+  const name    = form.name.value.trim();
+  const contact = form.contact.value.trim();
+  if (!name || !contact) {
+    showStatus('Please fill in your name and contact details.', 'warn');
+    return;
+  }
+
+  /* Loading state */
+  btn.textContent = 'Sending...';
+  btn.disabled = true;
+  btn.style.opacity = '0.7';
+  status.style.display = 'none';
+
+  try {
+    const res  = await fetch('https://api.web3forms.com/submit', {
+      method: 'POST',
+      body: new FormData(form)
+    });
+    const json = await res.json();
+
+    if (json.success) {
+      showStatus('Message sent! We\'ll reply within 2–4 hours on WhatsApp or email.', 'success');
+      btn.textContent = 'Sent ✓';
+      btn.style.background = 'var(--copper-dim)';
+      btn.style.opacity = '1';
+      form.reset();
+    } else {
+      throw new Error(json.message || 'Submission failed');
+    }
+
+  } catch (err) {
+    console.error('Form error:', err);
+    showStatus('Something went wrong. Please WhatsApp us at +91 9045368606.', 'error');
+    btn.textContent = 'Send Enquiry';
+    btn.disabled = false;
+    btn.style.opacity = '1';
+  }
+}
+
+function showStatus(msg, type) {
+  const el = document.getElementById('form-status');
+  el.textContent = msg;
+  el.style.display = 'block';
+  el.style.background = type === 'success' ? '#EAF3DE'
+                      : type === 'warn'    ? '#FAEEDA'
+                      : '#FCEBEB';
+  el.style.color      = type === 'success' ? '#27500A'
+                      : type === 'warn'    ? '#633806'
+                      : '#791F1F';
+  el.style.border     = `1px solid ${
+                          type === 'success' ? '#97C459'
+                        : type === 'warn'    ? '#EF9F27'
+                        : '#F09595'}`;
+}
 </script>
 </body>
 </html>
